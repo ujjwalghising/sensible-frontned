@@ -72,7 +72,7 @@ const Products = () => {
   };
 
   return (
-    <div>
+    <div className='product-container'>
       <ToastContainer position="top-right" autoClose={1000} hideProgressBar />
 
       <div className='prodhead'>
@@ -92,9 +92,11 @@ const Products = () => {
             {products.map((product) => (
               <div key={product._id} className='product-card'>
                 <img src={product.image} alt={product.name} />
+                <div className='product-name'>
                 <h3>{product.name}</h3>
-                <p>{product.description}</p>
-                <p>Price: ₹{product.price}</p>
+                </div>
+                <p className='product-details'>{product.description}</p>
+                <p className='product-price'>Price: ₹{product.price}</p>
 
                 <div className='quantity-controls'>
                   <button 
