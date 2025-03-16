@@ -1,11 +1,14 @@
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import "./Home.css";
 
 const Home = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); useEffect(() => {
+    setTimeout(() => setFirstLoad(false), 500); // Remove animation after 0.5s
+  }, []);
 
   const slides = [
     {
@@ -27,7 +30,7 @@ const Home = () => {
     },
   ];
   
-  const products = Array.from({ length: 10 }, (_, index) => ({
+  const products = Array.from({ length: 8 }, (_, index) => ({
     id: index + 1,
     image: `/images/img${index + 1}.jpeg`,
     name: "Discover",
@@ -43,6 +46,7 @@ const Home = () => {
     autoplaySpeed: 3000,
     arrows: false,
     fade: true,
+    adaptiveHeight: true,
   };
 
   return (
@@ -56,6 +60,8 @@ const Home = () => {
                 src={slide.image}
                 alt="Fashion Slide"
                 className="slide-image"
+                loading="lazy"
+                onError={(e) => (e.target.style.display = "none")}
               />
               <div className="slide-overlay">
                 <h1>{slide.text}</h1>
