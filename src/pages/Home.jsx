@@ -10,7 +10,7 @@ const Home = () => {
   const slides = [
     {
       id: 1,
-      image: "/images/img1.jpeg",
+      image: "https://images.pexels.com/photos/31095885/pexels-photo-31095885/free-photo-of-vintage-styled-female-portrait-with-pampas-grass.jpeg",
       text: "Discover the Latest Fashion Trends",
     },
     {
@@ -26,69 +26,23 @@ const Home = () => {
       text: "Find your perfect outfit today!",
     },
   ];
-  const products = [
-    {
-      id: 1,
-      image: "/images/img1.jpeg",
-      name: "discover",
-    },
-    {
-      id: 2,
-      image: "/images/img2.jpeg",
-      name: "discover",
-    },
-    {
-      id: 3,
-      image: "/images/img3.jpeg",
-      name: "discover",
-    },
-    {
-      id: 4,
-      image: "/images/img4.jpeg",
-      name: "discover",
-    },
-    {
-      id: 5,
-      image: "/images/img5.jpeg",
-      name: "discover",
-    },
-    {
-      id: 6,
-      image: "/images/img6.jpeg",
-      name: "discover",
-    },
-    {
-      id: 7,
-      image: "/images/img7.jpeg",
-      name: "discover",
-    },
-    {
-      id: 8,
-      image: "/images/img8.jpeg",
-      name: "discover",
-    },
-    {
-      id: 9,
-      image: "/images/img9.jpeg",
-      name: "discover",
-    },
-    {
-      id: 10,
-      image:
-        "https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg",
-      text: "Find your perfect outfit today!",
-    },
-  ];
+  
+  const products = Array.from({ length: 10 }, (_, index) => ({
+    id: index + 1,
+    image: `/images/img${index + 1}.jpeg`,
+    name: "Discover",
+  }));
 
   const sliderSettings = {
     dots: true,
     infinite: true,
-    speed: 500,
+    speed: 1500,
     slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 3000,
     arrows: false,
+    fade: true,
   };
 
   return (

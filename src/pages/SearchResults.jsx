@@ -11,7 +11,7 @@ const SearchResults = () => {
   useEffect(() => {
     if (query) {
       axios
-        .get(`http://localhost:5000/api/products/search?query=${query}`)
+        .get(`https://sensible-backend.up.railway.app/api/products/search?query=${query}`)
         .then((response) => {
           setProducts(response.data);
           setError(null);
