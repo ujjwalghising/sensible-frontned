@@ -1,93 +1,91 @@
-// Register.jsx
-import './Register.css';
 import React, { useState } from "react";
-import axios from "../utils/axios";  // Import your axios instance
-import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
+import "./Auth.css";
 
 const Register = () => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [age, setAge] = useState("");
-  const [gender, setGender] = useState("Male");
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    gender: "",
+  });
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
   const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+
     try {
-      const response = await axios.post("/api/register", {
-        name,
-        email,
-        password,
-        age,
-        gender,
-      });
-      navigate("/login");  // Redirect to login after successful registration
-    } catch (err) {
-      setError("Error registering user. Please try again.");
-    } finally {
-      setLoading(false);
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/register`,
+        formData
+      );
+
+      if (response.status === 201) {
+        setMessage("Please check your email to verify your account.");
+        setTimeout(() => navigate("/login"), 3000);  // Redirect after 3 seconds
+      }
+    } catch (error) {
+      setError(error.response?.data?.error || "Registration failed.");
     }
   };
 
   return (
-    <div className="register-container">
-      <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Name: </label>
+    <div className="auth-container">
+      <div className="auth-card">
+        <h2>Register</h2>
+        {message && <p className="success">{message}</p>}
+        {error && <p className="error">{error}</p>}
+        
+        <form onSubmit={handleSubmit}>
           <input
             type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            name="name"
+            placeholder="Name"
+            value={formData.name}
+            onChange={handleChange}
             required
           />
-        </div>
-        <div>
-          <label>Email: </label>
           <input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
             required
           />
-        </div>
-        <div>
-          <label>Password: </label>
           <input
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
             required
           />
-        </div>
-        <div>
-          <label>Age: </label>
-          <input
-            type="number"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
+          <select
+            name="gender"
+            value={formData.gender}
+            onChange={handleChange}
             required
-          />
-        </div>
-        <div>
-          <label>Gender: </label>
-          <select value={gender} onChange={(e) => setGender(e.target.value)}>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
+          >
+            <option value="">Select Gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
           </select>
-        </div>
-        {error && <div style={{ color: "red" }}>{error}</div>}
-        <button type="submit" disabled={loading}>Register</button>
-        {loading && <p>Loading...</p>}
-      </form>
-      <div className="login-link">
-        <p>Already have an account? <a href="/login">Login</a></p>
+
+          <button type="submit">Register</button>
+        </form>
+        
+        <p>
+          Already have an account? <Link to="/login">Login</Link>
+        </p>
       </div>
     </div>
   );

@@ -6,14 +6,19 @@ import "slick-carousel/slick/slick-theme.css";
 import "./Home.css";
 
 const Home = () => {
-  const navigate = useNavigate(); useEffect(() => {
-    setTimeout(() => setFirstLoad(false), 500); // Remove animation after 0.5s
+  const navigate = useNavigate();
+  const [firstLoad, setFirstLoad] = useState(true); // Declare state for animation
+
+  useEffect(() => {
+    const timer = setTimeout(() => setFirstLoad(false), 500); // Remove animation after 0.5s
+    return () => clearTimeout(timer); // Cleanup timeout on unmount
   }, []);
 
   const slides = [
     {
       id: 1,
-      image: "https://images.pexels.com/photos/31095885/pexels-photo-31095885/free-photo-of-vintage-styled-female-portrait-with-pampas-grass.jpeg",
+      image:
+        "https://images.pexels.com/photos/31095885/pexels-photo-31095885/free-photo-of-vintage-styled-female-portrait-with-pampas-grass.jpeg",
       text: "Discover the Latest Fashion Trends",
     },
     {
@@ -29,7 +34,7 @@ const Home = () => {
       text: "Find your perfect outfit today!",
     },
   ];
-  
+
   const products = Array.from({ length: 8 }, (_, index) => ({
     id: index + 1,
     image: `/images/img${index + 1}.jpeg`,
@@ -50,7 +55,7 @@ const Home = () => {
   };
 
   return (
-    <div className="home-container">
+    <div className={`home-container ${firstLoad ? "loading" : ""}`}>
       {/* Hero Section with Slideshow */}
       <div className="hero">
         <Slider {...sliderSettings}>

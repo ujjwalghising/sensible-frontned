@@ -6,6 +6,8 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import SearchResults from "./pages/SearchResults";
+import VerifyEmail from "./pages/VerifyEmail";
+import PrivateRoute from "./components/PrivateRoute";
 
 
 
@@ -20,6 +22,8 @@ const AppRoutes = () => (
     <Route path="/products" element={<Products />} />
     <Route path="/cart" element={<Cart />} />
     <Route path="/register" element={<Register />} />
+    <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
     <Route path="/login" element={<Login />} />
     <Route path="/search" element={<SearchResults />} />
     <Route path="/products/category/:categoryName?" element={<Products />} />
