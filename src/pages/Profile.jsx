@@ -12,7 +12,7 @@ const Profile = () => {
       const token = localStorage.getItem("token");
 
       try {
-        const res = await axios.get("http://localhost:5000/api/auth/profile", {
+        const res = await axios.get("https://sensible-backend.up.railway.app", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(res.data);
