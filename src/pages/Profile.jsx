@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 
 const Profile = () => {
-  const [user, setUser] = useState({ name: "", email: "", gender: "" });  // ✅ Initialize with empty strings
+  const [user, setUser] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -23,14 +23,7 @@ const Profile = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // ✅ Handle missing fields gracefully
-        const { name, email, gender } = res.data;
-        setUser({
-          name: name || "N/A",
-          email: email || "N/A",
-          gender: gender || "N/A",
-        });
-
+        setUser(res.data);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -44,8 +37,9 @@ const Profile = () => {
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
+    localStorage.removeItem("token");       // ✅ Remove token from localStorage
+    localStorage.removeItem("user");        // ✅ Clear user data
+    navigate("/login");                     // ✅ Redirect to login page
   };
 
   if (loading) {
@@ -63,7 +57,11 @@ const Profile = () => {
       <p><strong>Email:</strong> {user.email}</p>
       <p><strong>Gender:</strong> {user.gender}</p>
 
-      <button onClick={handleLogout} className="logout-button">
+      {/* ✅ Logout Button */}
+      <button 
+        onClick={handleLogout} 
+        className="logout-button"
+      >
         Logout
       </button>
     </div>
