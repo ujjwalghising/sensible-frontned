@@ -30,10 +30,26 @@ const Register = () => {
 
       if (response.status === 201) {
         setMessage("Please check your email to verify your account.");
-        setTimeout(() => navigate("/login"), 3000);  // Redirect after 3 seconds
+        setTimeout(() => navigate("/login"), 3000);
       }
     } catch (error) {
-      setError(error.response?.data?.error || "Registration failed.");
+      if (error.response) {
+        // Server responded with an error
+        const status = error.response.status;
+        if (status === 400) {
+          setError("User already exists or invalid data.");
+        } else if (status === 500) {
+          setError("Server error. Please try again later.");
+        } else {
+          setError(error.response.data.error || "An error occurred.");
+        }
+      } else if (error.request) {
+        // No response received
+        setError("No response from server. Check your connection.");
+      } else {
+        // Other errors
+        setError("An unexpected error occurred.");
+      }
     }
   };
 
@@ -43,7 +59,7 @@ const Register = () => {
         <h2>Register</h2>
         {message && <p className="success">{message}</p>}
         {error && <p className="error">{error}</p>}
-        
+
         <form onSubmit={handleSubmit}>
           <input
             type="text"
@@ -82,7 +98,7 @@ const Register = () => {
 
           <button type="submit">Register</button>
         </form>
-        
+
         <p>
           Already have an account? <Link to="/login">Login</Link>
         </p>
