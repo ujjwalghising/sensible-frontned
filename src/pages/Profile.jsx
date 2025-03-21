@@ -22,8 +22,9 @@ const Profile = () => {
         const res = await axios.get("https://sensible-backend.up.railway.app/api/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+        if(res.data) {
         setUser(res.data);
+        }
         setLoading(false);
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -53,9 +54,9 @@ const Profile = () => {
   return (
     <div className="profile-container">
       <h2>Profile</h2>
-      <p><strong>Name:</strong> {user.name}</p>
-      <p><strong>Email:</strong> {user.email}</p>
-      <p><strong>Gender:</strong> {user.gender}</p>
+      <p><strong>Name:</strong> {user.name || "N/A"}</p>
+      <p><strong>Email:</strong> {user.email || "N/A"}</p>
+      <p><strong>Gender:</strong> {user.gender || "N/A"}</p>
 
       {/* ✅ Logout Button */}
       <button 
