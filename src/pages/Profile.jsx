@@ -22,6 +22,7 @@ const Profile = () => {
         const res = await axios.get("https://sensible-backend.up.railway.app/api/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         setUser(res.data);
         setLoading(false);
       } catch (error) {
