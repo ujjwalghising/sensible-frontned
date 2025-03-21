@@ -36,6 +36,12 @@ const Profile = () => {
     fetchProfile();
   }, [navigate]);
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");       // ✅ Remove token from localStorage
+    localStorage.removeItem("user");        // ✅ Clear user data
+    navigate("/login");                     // ✅ Redirect to login page
+  };
+
   if (loading) {
     return <p>Loading...</p>;
   }
@@ -50,6 +56,14 @@ const Profile = () => {
       <p><strong>Name:</strong> {user.name}</p>
       <p><strong>Email:</strong> {user.email}</p>
       <p><strong>Gender:</strong> {user.gender}</p>
+
+      {/* ✅ Logout Button */}
+      <button 
+        onClick={handleLogout} 
+        className="logout-button"
+      >
+        Logout
+      </button>
     </div>
   );
 };
