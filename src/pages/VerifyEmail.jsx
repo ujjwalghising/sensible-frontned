@@ -1,29 +1,75 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import axios from "../utils/axios";
+import "./Auth.css";
 
 const VerifyEmail = () => {
-  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState("Verifying...");
+  const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
+  const token = searchParams.get("token");
 
   useEffect(() => {
-    const verify = async () => {
-      const token = new URLSearchParams(location.search).get("token");
+    const verifyEmail = async () => {
+      if (!token) {
+        setStatus("Invalid verification link.");
+        setLoading(false);
+        return;
+      }
 
       try {
-        await axios.get(`http://localhost:5000/api/auth/verify-email?token=${token}`);
-        setMessage("Email verified successfully. You can now log in.");
-        navigate("/login");
+        // Changed to GET request with token as query parameter
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/verify-email?token=${token}`
+        );
+
+        if (response.status === 200) {
+          setStatus("Email verified successfully! Redirecting to login...");
+          setTimeout(() => navigate("/login"), 3000);
+        } else {
+          setStatus("Unexpected response. Please try again.");
+        }
       } catch (error) {
-        setMessage("Invalid or expired token.");
+        if (error.response) {
+          switch (error.response.status) {
+            case 400:
+              setStatus("Invalid or expired token.");
+              break;
+            case 404:
+              setStatus("User not found.");
+              break;
+            case 500:
+              setStatus("Server error. Please try again later.");
+              break;
+            default:
+              setStatus(`Verification failed: ${error.response.data.error}`);
+          }
+        } else {
+          setStatus("Network error. Please check your connection.");
+        }
+      } finally {
+        setLoading(false);
       }
     };
 
-    verify();
-  }, [navigate, location]);
+    verifyEmail();
+  }, [token, navigate]);
 
-  return <div>{message}</div>;
+  return (
+    <div className="auth-container">
+      <div className="auth-card">
+        <h2>Email Verification</h2>
+        {loading ? (
+          <div className="loader">Loading...</div>
+        ) : (
+          <p className={status.includes("successfully") ? "success" : "error"}>
+            {status}
+          </p>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default VerifyEmail;
