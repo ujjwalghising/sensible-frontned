@@ -13,12 +13,6 @@ const AppRoutes = () => (
     <Route path="/cart" element={<Cart />} />
     <Route path="/search" element={<SearchResults />} />
     <Route path="/products/category/:categoryName?" element={<Products />} />
-
-    {/* ✅ Profile route protected via PrivateRoute */}
-    <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-
-    {/* ✅ Default route to home if no match */}
-    <Route path="*" element={<Navigate to="/" />} />
   </Routes>
 );
 
