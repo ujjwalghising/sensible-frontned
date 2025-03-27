@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import Cart from "./pages/Cart";
-import Profile from "./pages/Profile";
 import SearchResults from "./pages/SearchResults";
 import PrivateRoute from "./components/PrivateRoute";
 
