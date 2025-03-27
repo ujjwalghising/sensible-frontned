@@ -6,34 +6,22 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import SearchResults from "./pages/SearchResults";
-import VerifyEmail from "./pages/VerifyEmail";
 import PrivateRoute from "./components/PrivateRoute";
-
-
-
-// ✅ Function to check authentication
-const isAuthenticated = () => {
-  return localStorage.getItem("token") !== null; // Checks if a token exists
-};
+import VerifyEmail from "./pages/VerifyEmail";
 
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Home />} />
     <Route path="/products" element={<Products />} />
     <Route path="/cart" element={<Cart />} />
-    <Route path="/register" element={<Register />} />
     <Route path="/verify-email" element={<VerifyEmail />} />
-      <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+    <Route path="/register" element={<Register />} />
     <Route path="/login" element={<Login />} />
     <Route path="/search" element={<SearchResults />} />
     <Route path="/products/category/:categoryName?" element={<Products />} />
 
-
-    {/* ✅ Protect the profile route */}
-    <Route
-      path="/profile"
-      element={isAuthenticated() ? <Profile /> : <Navigate to="/login" />}
-    />
+    {/* ✅ Profile route protected via PrivateRoute */}
+    <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
 
     {/* ✅ Default route to home if no match */}
     <Route path="*" element={<Navigate to="/" />} />

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import axios from "../utils/axios";
 import { Link, useNavigate } from "react-router-dom";
 import "./Auth.css";
 
@@ -21,37 +21,24 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setError(""); // Clear previous errors
+    setMessage(""); // Clear previous messages
+  
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/register`,
         formData
       );
-
+  
       if (response.status === 201) {
-        setMessage("Please check your email to verify your account.");
-        setTimeout(() => navigate("/login"), 3000);
+        setMessage("Registration successful! Please check your email to verify your account.");
+        setTimeout(() => navigate("/login"), 5000);
       }
     } catch (error) {
-      if (error.response) {
-        // Server responded with an error
-        const status = error.response.status;
-        if (status === 400) {
-          setError("User already exists or invalid data.");
-        } else if (status === 500) {
-          setError("Server error. Please try again later.");
-        } else {
-          setError(error.response.data.error || "An error occurred.");
-        }
-      } else if (error.request) {
-        // No response received
-        setError("No response from server. Check your connection.");
-      } else {
-        // Other errors
-        setError("An unexpected error occurred.");
-      }
+      setError(error.response?.data?.error || "An error occurred. Try again.");
     }
   };
+  
 
   return (
     <div className="auth-container">
