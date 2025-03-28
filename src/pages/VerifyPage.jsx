@@ -6,10 +6,14 @@ const VerifyPage = () => {
   const [message, setMessage] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
   const token = searchParams.get('token');
+  const status = searchParams.get('status');
 
   useEffect(() => {
     const verifyEmail = async () => {
+      if (!token) return;
+
       try {
         const response = await api.get(`/api/auth/verify?token=${token}`);
         setMessage(response.data.message || 'Email verified successfully');
@@ -22,10 +26,28 @@ const VerifyPage = () => {
       }
     };
 
-    if (token) {
-      verifyEmail();
+    // Display appropriate messages based on status
+    switch (status) {
+      case 'success':
+        setMessage('Email verified successfully. Redirecting...');
+        setTimeout(() => navigate('/login'), 3000);
+        break;
+      case 'already-verified':
+        setMessage('Email already verified. Redirecting...');
+        setTimeout(() => navigate('/login'), 3000);
+        break;
+      case 'failed':
+        setMessage('Invalid or expired token.');
+        break;
+      case 'error':
+        setMessage('An error occurred during verification.');
+        break;
+      default:
+        if (token) {
+          verifyEmail();
+        }
     }
-  }, [token, navigate]);
+  }, [token, status, navigate]);
 
   return (
     <div className="p-6 max-w-lg mx-auto bg-white rounded-xl shadow-md">
