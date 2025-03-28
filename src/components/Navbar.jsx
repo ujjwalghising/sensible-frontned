@@ -69,6 +69,8 @@ const Navbar = () => {
         <Link to="/profile" className="icon-button1">
           <FontAwesomeIcon icon={faUser} />
         </Link>
+        <Link to="/register">REGISTER</Link>
+        <Link to="/login">LOGIN</Link>
         <Link to="/cart" className="icon-button2">
           <FontAwesomeIcon icon={faShoppingBag} />
         </Link>
