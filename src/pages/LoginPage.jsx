@@ -4,11 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import api from '../utils/axios';
 
 const LoginPage = () => {
-  const [formData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,25 +36,32 @@ const LoginPage = () => {
   };
 
   return (
-  
-    <div className='flex flex-col items-center justify-center min-h-screen bg-gray-100'>
+    <div className="p-6 max-w-lg mx-auto bg-white rounded-xl shadow-md">
+      <h2 className="text-2xl font-bold mb-4">Login</h2>
       
-  <h2 className="flex justify-self-center text-4xl font-bold">Login</h2>
+      {error && <p className="text-red-500">{error}</p>}
 
-  <form onSubmit="{handleSubmit}">
-    
-    <input type="email" name="email" placeholder="your@email.com" required className="emailcard" />
-    <input type="password" name="password" placeholder="Password" required className="mb-3 w-full rounded border p-2" />
+      <form onSubmit={handleSubmit}>
+        <input
+          type="email" name="email" placeholder="Email"
+          value={formData.email} onChange={handleChange}
+          required className="w-full p-2 mb-3 border rounded"
+        />
+        
+        <input
+          type="password" name="password" placeholder="Password"
+          value={formData.password} onChange={handleChange}
+          required className="w-full p-2 mb-3 border rounded"
+        />
 
-    <button type="submit" className="w-full rounded bg-sky-500 p-2 text-white hover:bg-green-500">Login</button>
-  </form>
-<div className="flex items-center justify-center bg-white">
-  <p className="text-center font-semibold">
-    Don't have an account?
-    <a className="text-xl text-blue-500" href="/register">Sign Up</a>
-  </p>
-</div>
-</div>
+        <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
+          Login
+        </button>
+      </form>
+      <div>
+        <p>Don't have an account? <a href="/register">Sign Up</a></p> 
+      </div>
+    </div>
   );
 };
 
