@@ -187,6 +187,7 @@ a.logo {
   outline: none;
   padding: 5px;
   position: flex;
+  text-emphasis-color: #333;
 }
 
 /* Search button */

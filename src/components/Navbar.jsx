@@ -57,7 +57,7 @@ const Navbar = () => {
           <div className="search-container">
             <input
               type="text"
-              className="search-bar"
+              className="border-none outline-none p-1 flex text-black"
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

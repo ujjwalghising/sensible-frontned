@@ -1,102 +1,65 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "../utils/axios";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import "./SearchResults.css";
 
 const SearchResults = () => {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState(null);
-  const [quantities, setQuantities] = useState({});
   const location = useLocation();
+  const navigate = useNavigate();
 
   const query = new URLSearchParams(location.search).get("query");
 
   useEffect(() => {
     if (query) {
       axios
-        .get(`https://sensible-backend.up.railway.app/api/products/search?query=${query}`)
+        .get(`/api/products/search?query=${query}`)
         .then((response) => {
           setProducts(response.data);
           setError(null);
         })
-        .catch((err) => {
-          setError(err.response?.data?.message || "Error fetching products");
+        .catch(() => {
+          setError("Failed to load search results.");
           setProducts([]);
         });
     }
   }, [query]);
 
-  const handleQuantityChange = (productId, quantity) => {
-    if (quantity < 1) return;
-    setQuantities((prevQuantities) => ({
-      ...prevQuantities,
-      [productId]: quantity,
-    }));
-  };
-
-  const addToCart = async (product) => {
-    try {
-      const quantity = quantities[product._id] || 1;
-      const response = await axios.post("/api/cart/add", {
-        productId: product._id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        image: product.image,
-        category: product.category,
-        quantity,
-      });
-
-      if (response.status === 201) {
-        toast.success(`${product.name} added to cart!`);
-      } else {
-        toast.error("Failed to add item to cart!");
-      }
-    } catch (error) {
-      console.error("Failed to add item to cart:", error);
-      toast.error("Failed to add item to cart!");
-    }
-  };
-
   return (
-    <div className="search-results-container">
-      <ToastContainer position="top-right" autoClose={100} hideProgressBar />
-      <h2>Search Results for "{query}"</h2>
+    <div className="container mx-auto p-4 bg-white">
+      <h1 className="text-3xl font-bold mb-6">
+        Search Results for "{query}"
+      </h1>
+
       {error ? (
-        <p>{error}</p>
-      ) : products.length > 0 ? (
-        <div className="search-results-grid">
-        {products.map((product) => (
-          <div key={product._id} className="search-product-card">
-            <img src={product.image} alt={product.name} />
-            <h3>{product.name}</h3>
-            <p className="search-product-details">{product.description}</p>
-            <p className="search-product-price">Price: ₹{product.price}</p>
-            <div className="search-quantity-controls">
-              <button onClick={() => handleQuantityChange(product._id, (quantities[product._id] || 1) - 1)}>
-                -
-              </button>
-              <input
-                type="number"
-                value={quantities[product._id] || 1}
-                onChange={(e) => handleQuantityChange(product._id, Math.max(1, parseInt(e.target.value)))}
-                min="1"
-              />
-              <button onClick={() => handleQuantityChange(product._id, (quantities[product._id] || 1) + 1)}>
-                +
-              </button>
-            </div>
-            <button className="search-add-to-cart" onClick={() => addToCart(product)}>
-              Add to Cart
-            </button>
-          </div>
-        ))}
-      </div>
-      
+        <div className="text-red-500">
+          <p>{error}</p>
+          <button
+            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+            onClick={() => navigate("/")}
+          >
+            Back to Home
+          </button>
+        </div>
       ) : (
-        <p>No products found</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {products.map((product) => (
+            <div
+              key={product._id}
+              className="p-4 rounded-lg bg-white cursor-pointer hover:shadow-lg transition"
+              onClick={() => navigate(`/products/${product._id}`)}
+            >
+              <img
+                src={product.image || "/assets/no-image.jpg"}
+                alt={product.name}
+                className="w-full h-80 object-cover mb-4 pointer-events-none rounded-lg"
+              />
+              <h3 className="text-lg font-semibold">{product.name}</h3>
+              <p className="text-gray-600 text-sm mb-2">{product.description}</p>
+              <p className="text-lg font-bold text-black">₹{product.price}</p>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

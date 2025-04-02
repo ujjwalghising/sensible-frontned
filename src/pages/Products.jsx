@@ -1,149 +1,78 @@
-// Products.jsx
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "../utils/axios";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import './Products.css';
+import { getItem, setItem } from "../utils/storage"; // Import storage utils
 
 const Products = () => {
   const { categoryName } = useParams();
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
-  const [quantities, setQuantities] = useState({});
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
     setError(null);
 
-    const endpoint = categoryName
-      ? `https://sensible-backend.up.railway.app/api/products/category/${categoryName}`
-      : 'https://sensible-backend.up.railway.app/api/products';
+    // Unique cache key for each category or all products
+    const cacheKey = categoryName ? `category_${categoryName}` : "products_all";
+    const cachedData = getItem(cacheKey);
 
-    axios.get(endpoint)
+    if (cachedData) {
+      setProducts(cachedData);
+    }
+
+    axios
+      .get(categoryName ? `/api/products/category/${categoryName}` : "/api/products")
       .then((response) => {
         if (response.data.length === 0) {
-          setError('No products found in this category');
+          setError("No products found in this category");
         } else {
           setProducts(response.data);
+          setItem(cacheKey, response.data); // Cache category-based products
         }
-        setLoading(false);
       })
-      .catch((error) => {
-        console.error('Error fetching products:', error);
-        setError('Failed to load products!');
-        toast.error('Failed to load products!');
-        setLoading(false);
+      .catch(() => {
+        setError("Failed to load products!");
       });
   }, [categoryName]);
 
-  const handleQuantityChange = (productId, quantity) => {
-    if (quantity < 1) return;
-    setQuantities((prevQuantities) => ({
-      ...prevQuantities,
-      [productId]: quantity,
-    }));
-  };
-
-  const addToCart = async (product) => {
-    try {
-      const quantity = quantities[product._id] || 1;
-
-      const response = await axios.post('/api/cart/add', {
-        productId: product._id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        image: product.image,
-        category: product.category,
-        quantity,
-      });
-
-      if (response.status === 201) {
-        toast.success(`${product.name} added to cart!`);
-      } else {
-        toast.error('Failed to add item to cart!');
-      }
-    } catch (error) {
-      console.error('Failed to add item to cart:', error);
-      toast.error('Failed to add item to cart!');
-    }
-  };
-
   return (
-    <div className='product-container'>
-      <ToastContainer position="top-right" autoClose={1000} hideProgressBar />
+    <div className="container mx-auto p-4 bg-white">
+      <h1 className="text-3xl font-bold mb-6">
+        {categoryName ? categoryName.toUpperCase() : "‎ "}
+      </h1>
 
-      <div className='prodhead'>
-        <h1>{categoryName ? categoryName.toUpperCase() : "All Products"}</h1>
-
-        {loading ? (
-          <div className="loading-spinner">
-            <div className="spinner"></div>
-          </div>
-        ) : error ? (
-          <div className="error-message">
-            <p>{error}</p>
-            <button onClick={() => window.location.href = '/'}>Back to Home</button>
-          </div>
-        ) : (
-          <div className='product-list'>
-            {products.map((product) => (
-              <div key={product._id} className='product-card'>
-                <img src={product.image} alt={product.name} />
-                <div className='product-name'>
-                <h3>{product.name}</h3>
-                </div>
-                <p className='product-details'>{product.description}</p>
-                <p className='product-price'>Price: ₹{product.price}</p>
-
-                <div className='quantity-controls'>
-                  <button 
-                    onClick={() => handleQuantityChange(product._id, (quantities[product._id] || 1) - 1)}
-                    disabled={loading}
-                  >
-                    -
-                  </button>
-
-                  <input 
-                    type="number" 
-                    value={quantities[product._id] || 1} 
-                    onChange={(e) => {
-                      const newQuantity = parseInt(e.target.value);
-                      handleQuantityChange(product._id, newQuantity >= 1 ? newQuantity : 1);
-                    }}
-                    min="1"
-                    disabled={loading}
-                  />
-
-                  <button 
-                    onClick={() => handleQuantityChange(product._id, (quantities[product._id] || 1) + 1)}
-                    disabled={loading}
-                  >
-                    +
-                  </button>
-                </div>
-
-                <button 
-                  className='add-to-cart-btn' 
-                  onClick={() => addToCart(product)}
-                  disabled={loading}
-                >
-                  {loading ? 'Adding...' : 'Add to Cart'}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {error ? (
+        <div className="text-red-500">
+          <p>{error}</p>
+          <button
+            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+            onClick={() => window.location.href = "/"}
+          >
+            Back to Home
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {products.map((product) => (
+            <div
+              key={product._id}
+              className="p-4 rounded-lg bg-white cursor-pointer hover:shadow-lg transition"
+              onClick={() => navigate(`/product/${product._id}`)}
+            >
+              <img
+                src={product.image || "/assets/search.jpeg"}
+                alt={product.name}
+                className="w-full h-80 object-cover mb-4 pointer-events-none"
+              />
+              <h3 className="text-lg font-semibold">{product.name}</h3>
+              <p className="text-gray-600 text-sm mb-2">{product.description}</p>
+              <p className="text-lg font-bold text-black">₹{product.price}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 export default Products;
-
-
-// Fixed proxy and endpoints
-// Replaced 'https' with relative paths for proxy to work
-// Let me know if you want me to check any other part! 🚀
