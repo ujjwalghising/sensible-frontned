@@ -10,13 +10,20 @@ html {
 
 
 body {
-  background-color: #FBF8EF;
+  background-color:white;
   color: #333;
   min-height: 100vh; /* Ensures full height */
   overflow-y: overlay; 
 
   
 }
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
 
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
 
 

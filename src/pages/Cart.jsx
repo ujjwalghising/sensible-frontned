@@ -119,11 +119,11 @@ const clearCart = () => {
       {loading ? (
         <div className="loading">Loading your cart...</div>
       ) : cartItems.length === 0 ? (
-        <div className="empty-cart">
+        <div className="flex flex-col items-center text-center">
           <img
             src="https://img.freepik.com/premium-vector/shopping-bag-sleeping-character-cartoon-mascot-vector_193274-14172.jpg"
             alt="Empty Cart"
-            className="empty-cart-image"
+            className="w-60 h-60 mx-auto"
           />
           <p>Hey, it feels so light!</p>
           <p>There is nothing in your bag. Let’s add some items.</p>

@@ -23,7 +23,7 @@
   padding: 5px 20px;
   background-color: #3B3B3B;
   color: white;
-  position: sticky;
+  position:sticky;
   top: 0;
   width: 100%;
   z-index: 1000;
@@ -182,13 +182,7 @@ a.logo {
 }
 
 /* Search input styling */
-.search-bar {
-  border: none;
-  outline: none;
-  padding: 5px;
-  position: flex;
-  text-emphasis-color: #333;
-}
+
 
 /* Search button */
 .search-button-icon {
