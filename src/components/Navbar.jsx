@@ -22,10 +22,15 @@ const Navbar = () => {
   const handleLogout = () => {
     if (token) {
       logout();
-      toast.success("Logged out successfully!");
-      setTimeout(() => navigate("/login"), 1000);
+      toast.success("Logged out successfully!", {
+        autoClose: 500,
+        onClose: () => navigate("/login"),
+      });
+      
     } else {
-      toast.info("You're already logged out.");
+      toast.info("You're already logged out.", {
+        autoClose: 500,
+      });
     }
   };
 
