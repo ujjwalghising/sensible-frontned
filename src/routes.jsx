@@ -9,11 +9,12 @@ import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import VerifyPage from './pages/VerifyPage';
-import ForgotPassword from './pages/ForgotPassword';
+import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
 import ProductDetails from './pages/ProductDetails';
 
 const AppRoutes = () => {
-  const { token } = useAuth() ?? {};  // Prevents destructuring error
+  const { user, loading } = useAuth();
 
   return (
     <Routes>
@@ -25,12 +26,50 @@ const AppRoutes = () => {
       <Route path="/search" element={<SearchResults />} />
 
       {/* Auth Routes */}
-      <Route path="/login" element={!token ? <LoginPage /> : <Navigate to="/profile" />} />
-      <Route path="/register" element={!token ? <RegisterPage /> : <Navigate to="/profile" />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route
+  path="/login"
+  element={
+    loading ? (
+      <div>Loading...</div>
+    ) : !user ? (
+      <LoginPage />
+    ) : (
+      <Navigate to="/profile" />
+    )
+  }
+/>
+
+<Route
+  path="/register"
+  element={
+    loading ? (
+      <div>Loading...</div>
+    ) : !user ? (
+      <RegisterPage />
+    ) : (
+      <Navigate to="/profile" />
+    )
+  }
+/>
+
+      <Route path="/forgot-password" element={<ForgotPasswordPage/>} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage/>} />
 
       {/* Protected Routes */}
-      <Route path="/profile" element={token ? <ProfilePage /> : <Navigate to="/login" />} />
+      <Route
+  path="/profile"
+  element={
+    loading ? (
+      <div>Loading...</div>
+    ) : user ? (
+      <ProfilePage />
+    ) : (
+      <Navigate to="/login" />
+    )
+  }
+/>
+
+
       <Route path="/verify" element={<VerifyPage />} />
 
       {/* Dynamic Category Route */}

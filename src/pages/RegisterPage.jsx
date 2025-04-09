@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../utils/axios";
+import { Eye, EyeOff } from "lucide-react";
+
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({ name: "", email: "", password: "" });
@@ -8,6 +10,7 @@ const RegisterPage = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -39,27 +42,37 @@ const RegisterPage = () => {
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {["name", "email", "password"].map((field) => (
-            <div key={field} className="relative">
-              <input
-                type={field === "password" ? "password" : "text"}
-                name={field}
-                value={formData[field]}
-                onChange={handleChange}
-                required
-                className="peer w-full h-10 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none bg-transparent placeholder-transparent"
-                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-              />
-              <label
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 bg-white px-1 transition-all 
-                  peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-gray-400
-                  peer-focus:top-2 peer-focus:text-sm peer-focus:text-blue-500 
-                  peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:text-blue-500"
-              >
-                {field.charAt(0).toUpperCase() + field.slice(1)}
-              </label>
-            </div>
-          ))}
+        {["name", "email", "password"].map((field) => (
+  <div key={field} className="relative">
+    <input
+      type={field === "password" ? (showPassword ? "text" : "password") : "text"}
+      name={field}
+      value={formData[field]}
+      onChange={handleChange}
+      required
+      autoComplete={field === "password" ? "new-password" : field}
+      className="peer w-full h-10 pl-3 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none bg-transparent placeholder-transparent"
+      placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+    />
+    <label
+      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 bg-white px-1 transition-all 
+        peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-gray-400
+        peer-focus:top-2 peer-focus:text-sm peer-focus:text-blue-500 
+        peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:text-blue-500"
+    >
+      {field.charAt(0).toUpperCase() + field.slice(1)}
+    </label>
+
+    {field === "password" && (
+      <div
+        className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500"
+        onClick={() => setShowPassword((prev) => !prev)}
+      >
+        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+      </div>
+    )}
+  </div>
+))}
 
           <div className="text-right">
             <Link to="/forgot-password" className="text-sky-500 text-sm hover:underline">

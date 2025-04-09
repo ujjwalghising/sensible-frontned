@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -9,10 +10,10 @@ import {
   faBars,
   faRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
-import { useState } from "react";
+
 
 const Navbar = () => {
-  const { token, logout } = useAuth();
+  const { logout, isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const navigate = useNavigate();
@@ -20,19 +21,19 @@ const Navbar = () => {
 
   // Handle logout
   const handleLogout = () => {
-    if (token) {
-      logout();
+    if (isAuthenticated) {
+      logout(); // Clears cookie + user state
       toast.success("Logged out successfully!", {
-        autoClose: 500,
-        onClose: () => navigate("/login"),
+        autoClose: 800,
       });
-      
+      navigate("/login"); // Soft redirect via React Router
     } else {
       toast.info("You're already logged out.", {
-        autoClose: 500,
+        autoClose: 800,
       });
     }
   };
+
 
   // Handle search
   const handleSearch = () => {
@@ -122,7 +123,7 @@ const Navbar = () => {
                 Profile
               </Link>
 
-              {!token && (
+              {!isAuthenticated && (
                 <>
                   <Link
                     to="/login"

@@ -1,54 +1,56 @@
-import { createContext, useContext, useState, useEffect } from "react";
+// context/AuthContext.jsx
+import { createContext, useContext, useEffect, useState } from "react";
+import api from "../utils/axios";
 
 const AuthContext = createContext();
 
-export const useAuth = () => useContext(AuthContext);
-
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (storedToken) {
-      setToken(storedToken);
-
-      try {
-        const decoded = JSON.parse(atob(storedToken.split(".")[1]));
-        setUser(decoded);
-      } catch (err) {
-        console.error("Failed to decode token");
-      }
-    }
-    setLoading(false);
-  }, []);
-
-  const login = (newToken) => {
-    setToken(newToken);
-    localStorage.setItem("token", newToken);
-
+  const fetchProfile = async () => {
     try {
-      const decoded = JSON.parse(atob(newToken.split(".")[1]));
-      setUser(decoded);
+      const response = await api.get("/api/user/profile", { withCredentials: true });
+      setUser(response.data);
     } catch (err) {
-      console.error("Invalid token");
+      // Check if it's an auth error
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        console.warn("User not authenticated");
+        setUser(null);
+      } else {
+        console.error("Failed to fetch user profile:", err);
+      }
+    } finally {
+      setLoading(false);
     }
   };
+  
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("token");
+  const login = async () => {
+    await fetchProfile(); // 👈 fetch and set user after login
   };
 
-  const isAuthenticated = !!token;
+  const logout = async () => {
+    try {
+      await api.post("/api/auth/logout"); // ✅ correct path
+      setUser(null);
+      isAuthenticated(false);
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+  };
+  
+  
+useEffect(() => {
+    fetchProfile();
+  }, []);
+  const isAuthenticated = !!user; // Check if the user is authenticated based on the token
 
   return (
-    <AuthContext.Provider
-      value={{ token, user, isAuthenticated, login, logout, loading }}
-    >
-      {children}
+    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
+  
 };
+export const useAuth = () => useContext(AuthContext);
