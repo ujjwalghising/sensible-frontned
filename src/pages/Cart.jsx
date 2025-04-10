@@ -123,7 +123,7 @@ const clearCart = () => {
           <img
             src="https://img.freepik.com/premium-vector/shopping-bag-sleeping-character-cartoon-mascot-vector_193274-14172.jpg"
             alt="Empty Cart"
-            className="w-60 h-60 mx-auto"
+            className="w-65 h-65 mx-auto"
           />
           <p>Hey, it feels so light!</p>
           <p>There is nothing in your bag. Let’s add some items.</p>
