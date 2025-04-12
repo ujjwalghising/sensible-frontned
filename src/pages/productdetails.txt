@@ -24,21 +24,7 @@ const ProductDetails = () => {
 
   useEffect(() => {
     fetchProduct();
-
-    // Setup SSE connection for stock updates
-    const eventSource = new EventSource(`/api/products/stock-updates`);
-    eventSource.onmessage = (e) => {
-      const updatedProduct = JSON.parse(e.data);
-      if (updatedProduct.productId === product._id) {
-        fetchProduct(); // Re-fetch product to get updated stock
-      }
-    };
-
-    // Clean up the SSE connection when the component unmounts
-    return () => {
-      eventSource.close();
-    };
-  }, [id, product]);
+  }, [id]);
 
   const fetchProduct = async () => {
     try {
@@ -56,11 +42,6 @@ const ProductDetails = () => {
 
   const addToCart = async () => {
     if (!product) return;
-    if (product.countInStock < 1) {
-      toast.error('Product is out of stock');
-      return;
-    }
-
     setIsAdding(true);
     try {
       const res = await axios.post('/api/cart/add', {
@@ -109,10 +90,7 @@ const ProductDetails = () => {
       <div className="flex flex-col lg:flex-row gap-22">
         {/* Left Column - Product Images */}
         <div className="lg:w-1/2">
-          <div
-            className="relative w-full h-[400px] rounded-lg overflow-hidden shadow-lg cursor-pointer"
-            onClick={() => setIsModalOpen(true)}
-          >
+          <div className="relative w-full h-[400px] rounded-lg overflow-hidden shadow-lg cursor-pointer">
             <img
               src={product.images?.[activeImage]}
               alt={`Product ${activeImage + 1}`}
@@ -172,12 +150,13 @@ const ProductDetails = () => {
               -
             </button>
             <input
-              type="number"
-              value={quantity}
-              onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
-              min="1"
-              className="w-14 text-center border border-gray-300 rounded-lg"
-            />
+  type="number"
+  value={quantity}
+  onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
+  min="1"
+  className="w-14 text-center border border-gray-300 rounded-lg"
+/>
+
             <button
               onClick={() => handleQuantityChange(quantity + 1)}
               className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300"
@@ -187,7 +166,7 @@ const ProductDetails = () => {
           </div>
 
           {/* Add to Cart or Out of Stock Button */}
-          {product?.countInStock > 0 ? (
+          {product.inStock > 0 ? (
             <button
               onClick={addToCart}
               disabled={isAdding}
@@ -207,30 +186,32 @@ const ProductDetails = () => {
           {/* Review Form */}
           {user && (
             <div className="bg-white p-6 mt-8 rounded-lg shadow-lg">
-              <h3 className="text-xl font-semibold mb-3">Write a Review</h3>
-              <div className="flex items-center mb-4">
-                <select
-                  className="border border-gray-300 rounded-md px-3 py-1"
-                  value={rating}
-                  onChange={(e) => setRating(Number(e.target.value))}
-                >
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <option key={i} value={i + 1}>
-                      {i + 1} Stars
-                    </option>
-                  ))}
-                </select>
+              <h3 className="text-lg font-semibold mb-3">Write a Review</h3>
+
+              <div className="flex gap-1 mb-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setRating(i + 1)}
+                    className={`text-2xl ${i < rating ? 'text-yellow-500' : 'text-gray-300'}`}
+                  >
+                    ★
+                  </button>
+                ))}
               </div>
+
               <textarea
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="Write your review..."
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
+                rows="4"
+                placeholder="Write your review..."
+                className="w-full border border-gray-300 rounded-lg p-4 text-sm"
               />
+
               <button
                 onClick={submitReview}
                 disabled={submittingReview}
-                className="w-full bg-blue-600 text-white py-2 rounded-lg mt-4 hover:bg-blue-700 transition-all disabled:opacity-50"
+                className="mt-4 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
               >
                 {submittingReview ? 'Submitting...' : 'Submit Review'}
               </button>
@@ -239,17 +220,47 @@ const ProductDetails = () => {
         </div>
       </div>
 
+      {/* Reviews Section */}
+      {product.reviews?.length > 0 && (
+        <div className="mt-12 max-w-4xl mx-auto">
+          <h3 className="text-2xl font-bold mb-6">Customer Reviews</h3>
+          <div className="space-y-6">
+            {product.reviews.map((review, idx) => (
+              <div key={idx} className="bg-white border rounded-lg p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="font-semibold text-sm">{review.name}</p>
+                  <div className="text-yellow-500 text-sm">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span key={i}>{i < review.rating ? '★' : '☆'}</span>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-gray-700 text-sm">{review.comment}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Image Modal */}
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
-        contentLabel="Product Image Modal"
-        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl p-4 bg-white rounded-lg shadow-lg"
+        className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
       >
-        <img
-          src={product.images?.[activeImage]}
-          alt={`Product ${activeImage + 1}`}
-          className="w-full h-full object-cover"
-        />
+        <div className="relative w-3/4 md:w-1/2 bg-white p-6 rounded-lg shadow-lg">
+          <button
+            onClick={() => setIsModalOpen(false)}
+            className="absolute top-3 right-3 text-xl text-gray-700"
+          >
+            ×
+          </button>
+          <img
+            src={product.images?.[activeImage]}
+            alt={`Product ${activeImage + 1}`}
+            className="w-full h-[500px] object-contain"
+          />
+        </div>
       </Modal>
     </div>
   );

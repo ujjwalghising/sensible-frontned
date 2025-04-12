@@ -13,6 +13,7 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
 
+  // Filters
   const [sortBy, setSortBy] = useState("default");
   const [priceFilter, setPriceFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
@@ -22,6 +23,7 @@ const Products = () => {
   const observerRef = useRef();
   const loadBatchSize = 8;
 
+  // All tags collected from the filtered products
   const allTags = [...new Set(products.flatMap((p) => p.tags || []))];
 
   useEffect(() => {
@@ -45,13 +47,13 @@ const Products = () => {
           setItem(cacheKey, res.data);
         }
       })
-      .catch((err) => {
-        setError(err.response?.data?.message || "Failed to fetch products");
-        console.error(err);
+      .catch(() => {
+        setError("Failed to load products!");
       })
       .finally(() => setLoading(false));
   }, [categoryName]);
 
+  // Filter + Sort
   const getFiltered = useCallback(() => {
     let updated = [...products];
 
@@ -64,7 +66,7 @@ const Products = () => {
       updated = updated.filter(p => Math.floor(p.rating || 0) >= minRating);
     }
 
-    if (inStockOnly) updated = updated.filter(p => p.countInStock > 0);
+    if (inStockOnly) updated = updated.filter(p => p.countInStockk > 0);
 
     if (selectedTags.length > 0) {
       updated = updated.filter(p => (p.tags || []).some(tag => selectedTags.includes(tag)));
@@ -81,18 +83,20 @@ const Products = () => {
   const loadMore = useCallback(() => {
     const filtered = getFiltered();
     const next = filtered.slice(displayedProducts.length, displayedProducts.length + loadBatchSize);
-    setDisplayedProducts((prev) => [...prev, ...next]);
+    setDisplayedProducts(prev => [...prev, ...next]);
     if (displayedProducts.length + next.length >= filtered.length) {
       setHasMore(false);
     }
-  }, [getFiltered, displayedProducts.length]);
+  }, [getFiltered, displayedProducts]);
 
+  // Reset on filter change
   useEffect(() => {
     const filtered = getFiltered();
     setDisplayedProducts(filtered.slice(0, loadBatchSize));
     setHasMore(filtered.length > loadBatchSize);
   }, [getFiltered]);
 
+  // Intersection observer
   const lastProductRef = useCallback((node) => {
     if (loading || !hasMore) return;
     if (observerRef.current) observerRef.current.disconnect();
@@ -120,52 +124,13 @@ const Products = () => {
     setSelectedTags([]);
   };
 
-  // SSE for real-time stock updates
-  useEffect(() => {
-    const eventSource = new EventSource(`${import.meta.env.VITE_BACKEND_URL}/api/products/sse/stock-updates`);
-  
-    eventSource.onmessage = (event) => {
-      if (event.data && event.data.startsWith("{")) {
-        // Only try to parse data if it starts with '{' (indicating JSON)
-        try {
-          const stockUpdate = JSON.parse(event.data);
-          console.log('Received stock update:', stockUpdate);
-  
-          setProducts((prevProducts) => {
-            return prevProducts.map((product) =>
-              product._id === stockUpdate._id
-                ? { ...product, countInStock: stockUpdate.countInStock }
-                : product
-            );
-          });
-  
-          setDisplayedProducts((prev) =>
-            prev.map((product) =>
-              product._id === stockUpdate._id
-                ? { ...product, countInStock: stockUpdate.countInStock }
-                : product
-            )
-          );
-        } catch (error) {
-          console.error('Error parsing stock update:', error, event.data);
-        }
-      } else {
-        // Log if the event data is not a JSON message
-        console.log('Non-JSON message received:', event.data);
-      }
-    };
-  
-    eventSource.onerror = (error) => {
-      console.error('Error with SSE connection:', error);
-      setError('Failed to receive stock updates');
-    };
-  
-    return () => {
-      eventSource.close();
-    };
-  }, []);
-  
-  
+  const handleProductClick = (productId, countInStock) => {
+    if (countInStock > 0) {
+      navigate(`/product/${productId}`);
+    } else {
+      alert("This product is out of stock!");
+    }
+  };
 
   return (
     <div className="container mx-auto p-4 bg-white">
@@ -175,58 +140,41 @@ const Products = () => {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 items-center mb-6">
-        {/* Sort */}
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="border rounded p-2"
-        >
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border rounded px-4 py-2">
           <option value="default">Sort by</option>
           <option value="priceLowHigh">Price: Low to High</option>
           <option value="priceHighLow">Price: High to Low</option>
-          <option value="nameAZ">Name: A-Z</option>
-          <option value="nameZA">Name: Z-A</option>
+          <option value="nameAZ">Name: A to Z</option>
+          <option value="nameZA">Name: Z to A</option>
         </select>
 
-        {/* Price */}
-        <select
-          value={priceFilter}
-          onChange={(e) => setPriceFilter(e.target.value)}
-          className="border rounded p-2"
-        >
+        <select value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)} className="border rounded px-4 py-2">
           <option value="all">All Prices</option>
           <option value="below500">Below ₹500</option>
           <option value="500to1000">₹500 - ₹1000</option>
           <option value="above1000">Above ₹1000</option>
         </select>
 
-        {/* Rating */}
-        <select
-          value={ratingFilter}
-          onChange={(e) => setRatingFilter(e.target.value)}
-          className="border rounded p-2"
-        >
+        <select value={ratingFilter} onChange={(e) => setRatingFilter(e.target.value)} className="border rounded px-4 py-2">
           <option value="all">All Ratings</option>
-          <option value="4">4 stars & up</option>
-          <option value="3">3 stars & up</option>
-          <option value="2">2 stars & up</option>
-          <option value="1">1 star & up</option>
+          <option value="1">1⭐ & up</option>
+          <option value="2">2⭐ & up</option>
+          <option value="3">3⭐ & up</option>
+          <option value="4">4⭐ & up</option>
+          <option value="5">5⭐ only</option>
         </select>
 
-        {/* In stock */}
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={inStockOnly}
-            onChange={() => setInStockOnly(!inStockOnly)}
+            onChange={() => setInStockOnly(prev => !prev)}
+            className="form-checkbox"
           />
           In Stock Only
         </label>
 
-        <button
-          onClick={clearFilters}
-          className="bg-gray-100 px-4 py-2 rounded hover:bg-gray-200 text-sm"
-        >
+        <button onClick={clearFilters} className="px-4 py-2 bg-gray-100 rounded text-sm">
           Clear Filters
         </button>
       </div>
@@ -238,7 +186,11 @@ const Products = () => {
             <button
               key={tag}
               onClick={() => toggleTag(tag)}
-              className={`px-3 py-1 rounded-full text-sm border ${selectedTags.includes(tag) ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700"}`}
+              className={`px-3 py-1 rounded-full text-sm border ${
+                selectedTags.includes(tag)
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
             >
               {tag}
             </button>
@@ -248,7 +200,7 @@ const Products = () => {
 
       {/* Product Grid */}
       {loading ? (
-        <div className="text-center text-lg">Loading Products...</div>
+        <div className="text-center text-lg">Loading...</div>
       ) : error ? (
         <div className="text-red-500">{error}</div>
       ) : displayedProducts.length === 0 ? (
@@ -261,8 +213,8 @@ const Products = () => {
               <div
                 key={product._id}
                 ref={isLast ? lastProductRef : null}
-                className={`p-4 rounded-lg bg-white cursor-pointer shadow transition transform hover:-translate-y-1 hover:scale-105 duration-300 ${product.countInStock === 0 ? "opacity-60 pointer-events-none" : ""}`}
-                onClick={() => navigate(`/product/${product._id}`)}
+                className={`p-4 rounded-lg bg-white cursor-pointer shadow transition transform hover:-translate-y-1 hover:scale-105 duration-300 ${product.countInStockk === 0 ? "opacity-60 pointer-events-none" : ""}`}
+                onClick={() => handleProductClick(product._id, product.countInStockk)}
               >
                 <img
                   src={product.images?.[0] || "/assets/search.jpeg"}
@@ -272,8 +224,10 @@ const Products = () => {
                 <h3 className="text-lg font-semibold">{product.name}</h3>
                 <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
                 <p className="text-lg font-bold text-black">₹{product.price}</p>
-                <p className={`text-sm font-medium ${product.countInStock > 0 ? "text-green-600" : "text-red-500"}`}>
-                  {product.countInStock > 0 ? "In Stock" : "Out of Stock"}
+                <p
+                  className={`text-sm font-medium ${product.countInStockk > 0 ? "text-green-600" : "text-red-500"}`}
+                >
+                  {product.countInStockk > 0 ? "In Stock" : "Out of Stock"}
                 </p>
               </div>
             );
