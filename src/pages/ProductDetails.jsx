@@ -24,21 +24,34 @@ const ProductDetails = () => {
 
   useEffect(() => {
     fetchProduct();
-
+  
     // Setup SSE connection for stock updates
-    const eventSource = new EventSource(`/api/products/stock-updates`);
+    const eventSource = new EventSource(`${process.env.VITE_BACKEND_URL}/api/products/stock-updates`);
+    
     eventSource.onmessage = (e) => {
       const updatedProduct = JSON.parse(e.data);
       if (updatedProduct.productId === product._id) {
-        fetchProduct(); // Re-fetch product to get updated stock
+        // Update stock in state directly to avoid refetch
+        setProduct((prevProduct) => ({
+          ...prevProduct,
+          countInStock: updatedProduct.stock,
+        }));
       }
     };
-
+  
+    // Error handling for SSE connection
+    eventSource.onerror = (e) => {
+      console.error('Error with SSE connection:', e);
+      toast.error('Error with stock updates.');
+      eventSource.close();
+    };
+  
     // Clean up the SSE connection when the component unmounts
     return () => {
       eventSource.close();
     };
   }, [id, product]);
+  
 
   const fetchProduct = async () => {
     try {
