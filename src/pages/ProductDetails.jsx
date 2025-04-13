@@ -26,7 +26,7 @@ const ProductDetails = () => {
     fetchProduct();
   
     // Setup SSE connection for stock updates
-    const eventSource = new EventSource(`${import.meta.env.VITE_BACKEND_URL}/api/products/stock-updates`);
+    const eventSource = new EventSource(`${import.meta.env.VITE_BACKEND_URL}/api/products/sse/stock-updates`);
     eventSource.onmessage = (e) => {
       const updatedProduct = JSON.parse(e.data);
       if (updatedProduct.productId === product._id) {

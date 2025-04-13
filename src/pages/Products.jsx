@@ -139,13 +139,14 @@ const Products = () => {
             );
           });
   
-          setDisplayedProducts((prev) =>
-            prev.map((product) =>
+          setDisplayedProducts((prev) => {
+            return prev.map((product) =>
               product._id === stockUpdate._id
                 ? { ...product, countInStock: stockUpdate.countInStock }
                 : product
-            )
-          );
+            );
+          });
+          
         } catch (error) {
           console.error('Error parsing stock update:', error, event.data);
         }
