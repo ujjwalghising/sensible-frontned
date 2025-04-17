@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../../utils/axios";
 import { toast } from "react-hot-toast";
 
@@ -51,11 +52,19 @@ const ForgotPasswordPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-10 py-3 rounded-md text-white bg-blue-500 hover:bg-blue-600 transition"
+            className="w-full h-10 rounded-md text-white bg-blue-500 hover:bg-blue-600 transition"
           >
             {loading ? "Sending..." : "Send Reset Link"}
           </button>
         </form>
+        <div className="text-center mt-4 text-gray-600">
+          <p>
+            Remember your password?{" "}
+            <Link to="/login" className="text-sky-500 hover:underline">
+              Login
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
