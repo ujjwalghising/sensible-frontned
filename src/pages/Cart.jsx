@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import axios from '../utils/axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import './Cart.css';
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -21,7 +20,8 @@ const Cart = () => {
     setLoading(true);
     try {
       const response = await axios.get('/api/cart');
-      setCartItems(response.data);
+      // Ensure response data is an array
+      setCartItems(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       toast.error('Failed to load cart items!');
     }
@@ -72,23 +72,23 @@ const Cart = () => {
 
   // Calculate total price with discount
   const getTotalPrice = () => {
-    const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity || 0), 0);
     return total - (total * discount) / 100;
   };
 
-const clearCart = () => {
-  if (window.confirm('Are you sure you want to clear your entire cart?')) {
-    axios.delete('/api/cart/clear')
-      .then(() => {
-        setCartItems([]); // Clear locally only after successful deletion
-        toast.success('Cart cleared successfully!');
-      })
-      .catch(() => {
-        toast.error('Failed to clear cart!');
-        fetchCartItems(); // Re-fetch if server fails
-      });
-  }
-};
+  const clearCart = () => {
+    if (window.confirm('Are you sure you want to clear your entire cart?')) {
+      axios.delete('/api/cart/clear')
+        .then(() => {
+          setCartItems([]); // Clear locally only after successful deletion
+          toast.success('Cart cleared successfully!');
+        })
+        .catch(() => {
+          toast.error('Failed to clear cart!');
+          fetchCartItems(); // Re-fetch if server fails
+        });
+    }
+  };
 
   // Checkout cart
   const handleCheckout = () => {
@@ -96,9 +96,9 @@ const clearCart = () => {
     axios.post('/api/cart/checkout')
       .then(() => {
         toast.success('Checkout successful!');
-        setCartItems([]);
+        setCartItems([]); // Clear cart after successful checkout
       })
-      .catch((error) => toast.error('Checkout failed!'))
+      .catch(() => toast.error('Checkout failed!'))
       .finally(() => setCheckingOut(false));
   };
 
@@ -113,7 +113,7 @@ const clearCart = () => {
   };
 
   return (
-    <div className="cart-container">
+    <div className="cart-container p-4">
       <ToastContainer position="top-right" autoClose={1000} hideProgressBar />
 
       {loading ? (
@@ -127,63 +127,73 @@ const clearCart = () => {
           />
           <p>Hey, it feels so light!</p>
           <p>There is nothing in your bag. Let’s add some items.</p>
+          <button onClick={() => window.location.href = '/products'} className="mt-4 py-2 px-4 bg-blue-500 text-white rounded">
+            Browse Products
+          </button>
         </div>
       ) : (
         <>
-          <div className="cart-items">
+          <div className="cart-items space-y-4">
             {cartItems.map((item) => (
-              <div key={item._id} className="cart-item">
-                <img src={item.image} alt={item.name} className="cart-item-image" />
+              <div key={item._id} className="flex items-center p-4 border-b">
+                <img src={item.image || 'default-image.jpg'} alt={item.name} className="w-24 h-24 object-cover" />
+                <div className="ml-4">
+                  <h3 className="text-xl font-semibold">{item.name}</h3>
+                  <p className="text-gray-500">Category: {item.category}</p>
+                  <p className="text-gray-900">Price: ₹{item.price}</p>
 
-                <div className="cart-item-details">
-                  <h3>{item.name}</h3>
-                  <p>Category: {item.category}</p>
-                  <p>Price: ₹{item.price}</p>
-
-                  <div className="quantity-controls">
-                    <button onClick={() => updateQuantity(item._id, item.quantity - 1)}>-</button>
+                  <div className="quantity-controls mt-2 flex items-center">
+                    <button onClick={() => updateQuantity(item._id, item.quantity - 1)} className="px-4 py-1 border rounded">-</button>
                     <input
                       type="number"
                       value={item.quantity}
                       onChange={(e) => updateQuantity(item._id, parseInt(e.target.value))}
                       min="1"
+                      className="mx-2 w-16 text-center border p-2"
                     />
-                    <button onClick={() => updateQuantity(item._id, item.quantity + 1)}>+</button>
+                    <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="px-4 py-1 border rounded">+</button>
                   </div>
 
-                  <p>Total: ₹{item.price * item.quantity}</p>
-                  <button className="remove-btn" onClick={() => removeFromCart(item)}>Remove</button>
+                  <p className="mt-2 font-semibold">Total: ₹{item.price * item.quantity}</p>
+                  <button className="mt-2 py-1 px-4 bg-red-500 text-white rounded" onClick={() => removeFromCart(item)}>
+                    Remove
+                  </button>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="cart-summary">
-            <h2>Total Price: ₹{getTotalPrice()}</h2>
+          <div className="cart-summary mt-4">
+            <h2 className="text-2xl font-semibold">Total Price: ₹{getTotalPrice()}</h2>
 
-            <div className="discount-section">
+            <div className="discount-section mt-4">
               <input
                 type="text"
                 placeholder="Enter discount code"
                 value={discountCode}
                 onChange={(e) => setDiscountCode(e.target.value)}
+                className="w-full p-2 border rounded"
               />
-              <button className="apply-btn" onClick={applyDiscount}>Apply</button>
+              <button className="mt-2 py-2 px-4 bg-green-500 text-white rounded" onClick={applyDiscount}>
+                Apply Discount
+              </button>
             </div>
 
             {deletedItem && (
-              <div className="undo-section">
+              <div className="undo-section mt-4 p-4 bg-gray-100">
                 <p>Item removed: {deletedItem.name}</p>
-                <button className="undo-btn" onClick={undoRemove}>Undo</button>
+                <button className="py-1 px-4 bg-yellow-500 text-white rounded" onClick={undoRemove}>
+                  Undo
+                </button>
               </div>
             )}
 
-            <button className="clear-cart-btn" onClick={clearCart}>
+            <button className="mt-4 py-2 px-4 bg-gray-300 text-black rounded" onClick={clearCart}>
               Clear Cart
             </button>
 
             <button
-              className="checkout-btn"
+              className="mt-4 py-2 px-4 bg-blue-500 text-white rounded"
               onClick={handleCheckout}
               disabled={checkingOut}
             >
