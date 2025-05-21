@@ -1,161 +1,110 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import axios from '../utils/axios';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
-  const [deletedItem, setDeletedItem] = useState(null);
-  const [discountCode, setDiscountCode] = useState('');
-  const [discount, setDiscount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [checkingOut, setCheckingOut] = useState(false);
 
-  // Fetch cart items
+  const fetchCart = async () => {
+    try {
+      const res = await axios.get('/api/cart');
+      setCartItems(res.data.items || []);
+    } catch (err) {
+      toast.error('Failed to load cart');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateQuantity = async (productId, delta) => {
+    const item = cartItems.find(i => i.productId === productId);
+    if (!item) return;
+
+    const newQty = item.quantity + delta;
+    if (newQty < 1) return;
+
+    try {
+      await axios.post('/api/cart/add', {
+        productId,
+        quantity: delta,
+      });
+      setCartItems(prev =>
+        prev.map(i =>
+          i.productId === productId ? { ...i, quantity: newQty } : i
+        )
+      );
+    } catch (err) {
+      toast.error('Failed to update quantity');
+    }
+  };
+
+  const removeItem = async (productId) => {
+    try {
+      await axios.post('/api/cart/remove', { productId });
+      setCartItems(prev => prev.filter(i => i.productId !== productId));
+      toast.success('Item removed');
+    } catch (err) {
+      toast.error('Failed to remove item');
+    }
+  };
+
+  const subtotal = cartItems.reduce(
+    (acc, item) => acc + item.price * item.quantity,
+    0
+  );
+
   useEffect(() => {
-    fetchCartItems();
+    fetchCart();
   }, []);
 
-  const fetchCartItems = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get('/api/cart');
-      // Ensure response data is an array
-      setCartItems(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      toast.error('Failed to load cart items!');
-    }
-    setLoading(false);
-  };
-
-  // Remove item locally and sync with server
-  const removeFromCart = (item) => {
-    setDeletedItem(item);
-    setCartItems((prevItems) => prevItems.filter((i) => i._id !== item._id));
-    toast.info('Item removed. Click "Undo" to restore.');
-
-    axios.delete(`/api/cart/${item._id}`).catch(() => {
-      toast.error('Failed to remove item!');
-      setCartItems((prevItems) => [...prevItems, item]);
-    });
-  };
-
-  // Undo remove instantly
-  const undoRemove = () => {
-    if (deletedItem) {
-      setCartItems((prevItems) => [...prevItems, deletedItem]);
-      toast.success('Item restored to cart!');
-
-      axios.post('/api/cart/add', {
-        productId: deletedItem.productId,
-        quantity: deletedItem.quantity,
-      }).catch(() => toast.error('Failed to restore item!'));
-
-      setDeletedItem(null);
-    }
-  };
-
-  // Update quantity instantly
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity < 1) return;
-
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item._id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
-
-    axios.put(`/api/cart/update/${id}`, { quantity: newQuantity })
-      .then(() => toast.success('Item quantity updated'))
-      .catch(() => toast.error('Failed to update quantity!'));
-  };
-
-  // Calculate total price with discount
-  const getTotalPrice = () => {
-    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity || 0), 0);
-    return total - (total * discount) / 100;
-  };
-
-  const clearCart = () => {
-    if (window.confirm('Are you sure you want to clear your entire cart?')) {
-      axios.delete('/api/cart/clear')
-        .then(() => {
-          setCartItems([]); // Clear locally only after successful deletion
-          toast.success('Cart cleared successfully!');
-        })
-        .catch(() => {
-          toast.error('Failed to clear cart!');
-          fetchCartItems(); // Re-fetch if server fails
-        });
-    }
-  };
-
-  // Checkout cart
-  const handleCheckout = () => {
-    setCheckingOut(true);
-    axios.post('/api/cart/checkout')
-      .then(() => {
-        toast.success('Checkout successful!');
-        setCartItems([]); // Clear cart after successful checkout
-      })
-      .catch(() => toast.error('Checkout failed!'))
-      .finally(() => setCheckingOut(false));
-  };
-
-  // Apply discount
-  const applyDiscount = () => {
-    if (discountCode === 'SAVE20') {
-      setDiscount(20);
-      toast.success('Discount applied: 20% off!');
-    } else {
-      toast.error('Invalid discount code');
-    }
-  };
+  if (loading) return <div className="p-4">Loading cart...</div>;
 
   return (
-    <div className="cart-container p-4">
-      <ToastContainer position="top-right" autoClose={1000} hideProgressBar />
-
-      {loading ? (
-        <div className="loading">Loading your cart...</div>
-      ) : cartItems.length === 0 ? (
-        <div className="flex flex-col items-center text-center">
-          <img
-            src="https://img.freepik.com/premium-vector/shopping-bag-sleeping-character-cartoon-mascot-vector_193274-14172.jpg"
-            alt="Empty Cart"
-            className="w-65 h-65 mx-auto"
-          />
-          <p>Hey, it feels so light!</p>
-          <p>There is nothing in your bag. Let’s add some items.</p>
-          <button onClick={() => window.location.href = '/products'} className="mt-4 py-2 px-4 bg-blue-500 text-white rounded">
-            Browse Products
-          </button>
-        </div>
+    <div className="max-w-4xl mx-auto p-4">
+      <h2 className="text-2xl font-semibold mb-4">Your Cart</h2>
+      {cartItems.length === 0 ? (
+        <p>Your cart is empty.</p>
       ) : (
         <>
-          <div className="cart-items space-y-4">
-            {cartItems.map((item) => (
-              <div key={item._id} className="flex items-center p-4 border-b">
-                <img src={item.image || 'default-image.jpg'} alt={item.name} className="w-24 h-24 object-cover" />
-                <div className="ml-4">
-                  <h3 className="text-xl font-semibold">{item.name}</h3>
-                  <p className="text-gray-500">Category: {item.category}</p>
-                  <p className="text-gray-900">Price: ₹{item.price}</p>
-
-                  <div className="quantity-controls mt-2 flex items-center">
-                    <button onClick={() => updateQuantity(item._id, item.quantity - 1)} className="px-4 py-1 border rounded">-</button>
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => updateQuantity(item._id, parseInt(e.target.value))}
-                      min="1"
-                      className="mx-2 w-16 text-center border p-2"
-                    />
-                    <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="px-4 py-1 border rounded">+</button>
+          <div className="space-y-4">
+            {cartItems.map(item => (
+              <div
+                key={item.productId}
+                className="flex items-center justify-between border p-4 rounded-lg shadow-sm"
+              >
+                <div className="flex items-center gap-4">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-20 h-20 object-cover rounded"
+                  />
+                  <div>
+                    <h3 className="font-medium">{item.name}</h3>
+                    <p className="text-sm text-gray-500">{item.category}</p>
+                    <p className="text-sm font-semibold">${item.price}</p>
                   </div>
+                </div>
 
-                  <p className="mt-2 font-semibold">Total: ₹{item.price * item.quantity}</p>
-                  <button className="mt-2 py-1 px-4 bg-red-500 text-white rounded" onClick={() => removeFromCart(item)}>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => updateQuantity(item.productId, -1)}
+                    className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                  >
+                    −
+                  </button>
+                  <span className="px-2">{item.quantity}</span>
+                  <button
+                    onClick={() => updateQuantity(item.productId, 1)}
+                    className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                  >
+                    +
+                  </button>
+                  <button
+                    onClick={() => removeItem(item.productId)}
+                    className="ml-4 text-red-600 hover:underline"
+                  >
                     Remove
                   </button>
                 </div>
@@ -163,41 +112,13 @@ const Cart = () => {
             ))}
           </div>
 
-          <div className="cart-summary mt-4">
-            <h2 className="text-2xl font-semibold">Total Price: ₹{getTotalPrice()}</h2>
-
-            <div className="discount-section mt-4">
-              <input
-                type="text"
-                placeholder="Enter discount code"
-                value={discountCode}
-                onChange={(e) => setDiscountCode(e.target.value)}
-                className="w-full p-2 border rounded"
-              />
-              <button className="mt-2 py-2 px-4 bg-green-500 text-white rounded" onClick={applyDiscount}>
-                Apply Discount
-              </button>
-            </div>
-
-            {deletedItem && (
-              <div className="undo-section mt-4 p-4 bg-gray-100">
-                <p>Item removed: {deletedItem.name}</p>
-                <button className="py-1 px-4 bg-yellow-500 text-white rounded" onClick={undoRemove}>
-                  Undo
-                </button>
-              </div>
-            )}
-
-            <button className="mt-4 py-2 px-4 bg-gray-300 text-black rounded" onClick={clearCart}>
-              Clear Cart
-            </button>
-
+          <div className="mt-6 text-right">
+            <p className="text-xl font-bold">Subtotal: ${subtotal.toFixed(2)}</p>
             <button
-              className="mt-4 py-2 px-4 bg-blue-500 text-white rounded"
-              onClick={handleCheckout}
-              disabled={checkingOut}
+              className="mt-2 px-6 py-2 bg-black text-white rounded hover:bg-gray-800"
+              onClick={() => toast.success('Proceeding to checkout...')}
             >
-              {checkingOut ? 'Processing...' : 'Proceed to Checkout'}
+              Checkout
             </button>
           </div>
         </>

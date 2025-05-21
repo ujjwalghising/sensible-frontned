@@ -55,21 +55,26 @@ const Products = () => {
   const getFiltered = useCallback(() => {
     let updated = [...products];
 
+    // Apply price filter
     if (priceFilter === "below500") updated = updated.filter(p => p.price < 500);
     else if (priceFilter === "500to1000") updated = updated.filter(p => p.price >= 500 && p.price <= 1000);
     else if (priceFilter === "above1000") updated = updated.filter(p => p.price > 1000);
 
+    // Apply rating filter
     if (ratingFilter !== "all") {
       const minRating = parseInt(ratingFilter);
       updated = updated.filter(p => Math.floor(p.rating || 0) >= minRating);
     }
 
+    // In-stock only
     if (inStockOnly) updated = updated.filter(p => p.countInStock > 0);
 
+    // Tags
     if (selectedTags.length > 0) {
       updated = updated.filter(p => (p.tags || []).some(tag => selectedTags.includes(tag)));
     }
 
+    // Sorting
     if (sortBy === "priceLowHigh") updated.sort((a, b) => a.price - b.price);
     else if (sortBy === "priceHighLow") updated.sort((a, b) => b.price - a.price);
     else if (sortBy === "nameAZ") updated.sort((a, b) => a.name.localeCompare(b.name));
@@ -93,18 +98,21 @@ const Products = () => {
     setHasMore(filtered.length > loadBatchSize);
   }, [getFiltered]);
 
-  const lastProductRef = useCallback((node) => {
-    if (loading || !hasMore) return;
-    if (observerRef.current) observerRef.current.disconnect();
+  const lastProductRef = useCallback(
+    (node) => {
+      if (loading || !hasMore) return;
+      if (observerRef.current) observerRef.current.disconnect();
 
-    observerRef.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) {
-        loadMore();
-      }
-    });
+      observerRef.current = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      });
 
-    if (node) observerRef.current.observe(node);
-  }, [loading, hasMore, loadMore]);
+      if (node) observerRef.current.observe(node);
+    },
+    [loading, hasMore, loadMore]
+  );
 
   const toggleTag = (tag) => {
     setSelectedTags((prev) =>
@@ -120,54 +128,45 @@ const Products = () => {
     setSelectedTags([]);
   };
 
-  // SSE for real-time stock updates
+  // Real-time SSE stock updates
   useEffect(() => {
     const eventSource = new EventSource(`${import.meta.env.VITE_BACKEND_URL}/api/products/sse/stock-updates`);
-  
+
     eventSource.onmessage = (event) => {
       if (event.data && event.data.startsWith("{")) {
-        // Only try to parse data if it starts with '{' (indicating JSON)
         try {
           const stockUpdate = JSON.parse(event.data);
-          console.log('Received stock update:', stockUpdate);
-  
-          setProducts((prevProducts) => {
-            return prevProducts.map((product) =>
-              product && product._id === stockUpdate._id
+
+          setProducts((prevProducts) =>
+            prevProducts.map((product) =>
+              product._id === stockUpdate._id
                 ? { ...product, countInStock: stockUpdate.countInStock }
                 : product
-            );
-          });
-          
-          setDisplayedProducts((prev) => {
-            return prev.map((product) =>
-              product && product._id === stockUpdate._id
+            )
+          );
+
+          setDisplayedProducts((prev) =>
+            prev.map((product) =>
+              product._id === stockUpdate._id
                 ? { ...product, countInStock: stockUpdate.countInStock }
                 : product
-            );
-          });
-          
-          
+            )
+          );
         } catch (error) {
-          console.error('Error parsing stock update:', error, event.data);
+          console.error("Error parsing stock update:", error);
         }
       } else {
-        // Log if the event data is not a JSON message
-        console.log('Non-JSON message received:', event.data);
+        console.log("Non-JSON SSE message:", event.data);
       }
     };
-  
+
     eventSource.onerror = (error) => {
-      console.error('Error with SSE connection:', error);
-      setError('Failed to receive stock updates');
+      console.error("SSE connection error:", error);
+      setError("Failed to receive live stock updates.");
     };
-  
-    return () => {
-      eventSource.close();
-    };
+
+    return () => eventSource.close();
   }, []);
-  
-  
 
   return (
     <div className="container mx-auto p-4 bg-white">
@@ -177,12 +176,7 @@ const Products = () => {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 items-center mb-6">
-        {/* Sort */}
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="border rounded p-2"
-        >
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border rounded p-2">
           <option value="default">Sort by</option>
           <option value="priceLowHigh">Price: Low to High</option>
           <option value="priceHighLow">Price: High to Low</option>
@@ -190,24 +184,14 @@ const Products = () => {
           <option value="nameZA">Name: Z-A</option>
         </select>
 
-        {/* Price */}
-        <select
-          value={priceFilter}
-          onChange={(e) => setPriceFilter(e.target.value)}
-          className="border rounded p-2"
-        >
+        <select value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)} className="border rounded p-2">
           <option value="all">All Prices</option>
           <option value="below500">Below ₹500</option>
           <option value="500to1000">₹500 - ₹1000</option>
           <option value="above1000">Above ₹1000</option>
         </select>
 
-        {/* Rating */}
-        <select
-          value={ratingFilter}
-          onChange={(e) => setRatingFilter(e.target.value)}
-          className="border rounded p-2"
-        >
+        <select value={ratingFilter} onChange={(e) => setRatingFilter(e.target.value)} className="border rounded p-2">
           <option value="all">All Ratings</option>
           <option value="4">4 stars & up</option>
           <option value="3">3 stars & up</option>
@@ -215,13 +199,8 @@ const Products = () => {
           <option value="1">1 star & up</option>
         </select>
 
-        {/* In stock */}
         <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={inStockOnly}
-            onChange={() => setInStockOnly(!inStockOnly)}
-          />
+          <input type="checkbox" checked={inStockOnly} onChange={() => setInStockOnly(!inStockOnly)} />
           In Stock Only
         </label>
 
@@ -240,7 +219,11 @@ const Products = () => {
             <button
               key={tag}
               onClick={() => toggleTag(tag)}
-              className={`px-3 py-1 rounded-full text-sm border ${selectedTags.includes(tag) ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700"}`}
+              className={`px-3 py-1 rounded-full text-sm border ${
+                selectedTags.includes(tag)
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
             >
               {tag}
             </button>
@@ -248,7 +231,7 @@ const Products = () => {
         </div>
       )}
 
-      {/* Product Grid */}
+      {/* Products Grid */}
       {loading ? (
         <div className="text-center text-lg">Loading Products...</div>
       ) : error ? (
@@ -263,7 +246,9 @@ const Products = () => {
               <div
                 key={product._id}
                 ref={isLast ? lastProductRef : null}
-                className={`p-4 rounded-lg bg-white cursor-pointer shadow transition transform hover:-translate-y-1 hover:scale-105 duration-300 ${product.countInStock === 0 ? "opacity-60 pointer-events-none" : ""}`}
+                className={`p-4 rounded-lg bg-white cursor-pointer shadow transition transform hover:-translate-y-1 hover:scale-105 duration-300 ${
+                  product.countInStock === 0 ? "opacity-60 pointer-events-none" : ""
+                }`}
                 onClick={() => navigate(`/product/${product._id}`)}
               >
                 <img
@@ -274,7 +259,11 @@ const Products = () => {
                 <h3 className="text-lg font-semibold">{product.name}</h3>
                 <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
                 <p className="text-lg font-bold text-black">₹{product.price}</p>
-                <p className={`text-sm font-medium ${product.countInStock > 0 ? "text-green-600" : "text-red-500"}`}>
+                <p
+                  className={`text-sm font-medium ${
+                    product.countInStock > 0 ? "text-green-600" : "text-red-500"
+                  }`}
+                >
                   {product.countInStock > 0 ? "In Stock" : "Out of Stock"}
                 </p>
               </div>

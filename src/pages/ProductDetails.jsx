@@ -10,101 +10,106 @@ Modal.setAppElement('#root');
 
 const ProductDetails = () => {
   const { id } = useParams();
-  const { user } = useAuth();
+const { user } = useAuth();
+
 
   const [product, setProduct] = useState(null);
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [inputValue, setInputValue] = useState('1');
   const [isAdding, setIsAdding] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [isWishlist, setIsWishlist] = useState(false); // For wishlist functionality
   const [comment, setComment] = useState('');
   const [rating, setRating] = useState(5);
-  const [submittingReview, setSubmittingReview] = useState(false);
 
-  useEffect(() => {
-    fetchProduct();
-  
-    // Setup SSE connection for stock updates
-    const eventSource = new EventSource(`${import.meta.env.VITE_BACKEND_URL}/api/products/sse/stock-updates`);
-    eventSource.onmessage = (e) => {
-      const updatedProduct = JSON.parse(e.data);
-      if (updatedProduct.productId === product._id) {
-        // Update stock in state directly to avoid refetch
-        setProduct((prevProduct) => ({
-          ...prevProduct,
-          countInStock: updatedProduct.stock,
-        }));
-      }
-    };
-  
-    // Error handling for SSE connection
-    eventSource.onerror = (e) => {
-      console.error('Error with SSE connection:', e);
-      toast.error('Error with stock updates.');
-      eventSource.close();
-    };
-  
-    // Clean up the SSE connection when the component unmounts
-    return () => {
-      eventSource.close();
-    };
-  }, [id, product]);
-  
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const fetchProduct = async () => {
     try {
       const res = await axios.get(`/api/products/${id}`);
       setProduct(res.data);
-    } catch {
+    } catch (err) {
       toast.error('Failed to load product');
     }
   };
 
-  const handleQuantityChange = (value) => {
-    if (value < 1) return;
-    setQuantity(value);
-  };
+  useEffect(() => {
+    fetchProduct();
 
-  const addToCart = async () => {
-    if (!product) return;
-    if (product.countInStock < 1) {
-      toast.error('Product is out of stock');
-      return;
-    }
+    const eventSource = new EventSource(
+      `${import.meta.env.VITE_BACKEND_URL}/api/products/sse/stock-updates`
+    );
 
-    setIsAdding(true);
-    try {
-      const res = await axios.post('/api/cart/add', {
-        productId: product._id,
-        name: product.name,
-        price: product.price,
-        image: product.images[0],
-        category: product.category,
-        quantity,
-      });
-      if (res.status === 201) toast.success('Added to cart!');
-      else toast.error('Failed to add to cart');
-    } catch {
+    eventSource.onmessage = (e) => {
+      const updatedProduct = JSON.parse(e.data);
+      if (updatedProduct.productId === id) {
+        setProduct((prevProduct) =>
+          prevProduct
+            ? { ...prevProduct, countInStock: updatedProduct.stock }
+            : prevProduct
+        );
+      }
+    };
+
+    eventSource.onerror = (e) => {
+      console.error('Error with SSE connection:', e);
+      toast.error('Error with stock updates.');
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [id]);
+
+const handleQuantityChange = (value) => {
+  if (value < 1 || value > product.countInStock) {
+    toast.error('Invalid quantity');
+    return;
+  }
+  setQuantity(value);
+  setInputValue(value.toString());
+};
+const addToCart = async () => {
+  if (!product || product.countInStock < 1) {
+    toast.error('Out of stock');
+    return;
+  }
+
+  try {
+    const res = await axios.post('/api/cart/add', {
+      productId: product._id,
+      quantity,
+    });
+
+    if (res.status === 201) {
+      toast.success('Added to cart');
+    } else {
       toast.error('Failed to add to cart');
     }
-    setIsAdding(false);
-  };
-
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Failed to add');
+  }
+};
   const submitReview = async () => {
     if (!comment.trim()) return toast.error('Please enter a comment');
 
     try {
       setSubmittingReview(true);
-      await axios.post(`/api/products/${id}/review`, {
-        comment,
-        rating,
-      });
+      await axios.post(
+        `/api/products/${id}/review`,
+        {
+          comment,
+          rating,
+        },
+        { withCredentials: true }
+      );
 
       toast.success('Review submitted!');
       setComment('');
       setRating(5);
-      fetchProduct(); // refresh product + reviews
+      fetchProduct(); // Refresh product + reviews
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error submitting review');
     } finally {
@@ -112,14 +117,30 @@ const ProductDetails = () => {
     }
   };
 
-  if (!product) return null;
+  // Wishlist functionality
+  const toggleWishlist = async () => {
+    try {
+      const res = await axios.post(
+        `/api/products/${id}/wishlist`,
+        {},
+        { withCredentials: true }
+      );
+
+      setIsWishlist(!isWishlist);
+      toast.success(isWishlist ? 'Removed from Wishlist' : 'Added to Wishlist');
+    } catch (err) {
+      toast.error('Error with Wishlist');
+    }
+  };
+
+  if (!product) return <div className="text-center p-6">Loading...</div>;
 
   return (
     <div className="container mx-auto p-6 md:p-8 mt-6">
       <ToastContainer position="top-right" autoClose={500} hideProgressBar />
 
       <div className="flex flex-col lg:flex-row gap-22">
-        {/* Left Column - Product Images */}
+        {/* Product Images */}
         <div className="lg:w-1/2">
           <div
             className="relative w-full h-[400px] rounded-lg overflow-hidden shadow-lg cursor-pointer"
@@ -139,8 +160,8 @@ const ProductDetails = () => {
                 onClick={() => setActiveImage(idx)}
                 className={`w-full h-40 object-cover rounded-md transition-all duration-300 cursor-pointer ${
                   idx === activeImage
-                    ? 'border-blue-600 shadow-md'
-                    : 'border-gray-200'
+                    ? 'border-2 border-blue-600 shadow-md'
+                    : 'border border-gray-200'
                 }`}
                 alt={`Thumbnail ${idx}`}
               />
@@ -148,7 +169,7 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        {/* Right Column - Product Details */}
+        {/* Product Info */}
         <div className="lg:w-1/2 space-y-6">
           <h1 className="text-4xl font-semibold text-gray-900 leading-tight">
             {product.name}
@@ -173,32 +194,41 @@ const ProductDetails = () => {
 
           <div className="text-sm text-gray-500">Category: {product.category}</div>
 
-          {/* Quantity Selector */}
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium">Quantity:</span>
-            <button
-              onClick={() => handleQuantityChange(quantity - 1)}
-              className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
-              disabled={quantity === 1}
-            >
-              -
-            </button>
-            <input
-              type="number"
-              value={quantity}
-              onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
-              min="1"
-              className="w-14 text-center border border-gray-300 rounded-lg"
-            />
-            <button
-              onClick={() => handleQuantityChange(quantity + 1)}
-              className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300"
-            >
-              +
-            </button>
-          </div>
+  <span className="text-sm font-medium">Quantity:</span>
+  <button
+    onClick={() => handleQuantityChange(quantity - 1)}
+    className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+    disabled={quantity === 1}
+  >
+    -
+  </button>
+<input
+  type="text"
+  value={inputValue}
+  onChange={(e) => setInputValue(e.target.value)}
+  onBlur={() => {
+    const parsed = parseInt(inputValue);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= product.countInStock) {
+      setQuantity(parsed);
+    } else {
+      toast.error('Invalid quantity');
+      setInputValue(quantity.toString());
+    }
+  }}
+  className="w-14 text-center border border-gray-300 rounded-lg"
+/>
+  <button
+    onClick={() => handleQuantityChange(quantity + 1)}
+    className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300"
+    disabled={quantity >= product.countInStock}
+  >
+    +
+  </button>
+</div>
 
-          {/* Add to Cart or Out of Stock Button */}
+
+          {/* Add to Cart Button */}
           {product?.countInStock > 0 ? (
             <button
               onClick={addToCart}
@@ -215,6 +245,14 @@ const ProductDetails = () => {
               Out of Stock
             </button>
           )}
+
+          {/* Wishlist Button */}
+          <button
+            onClick={toggleWishlist}
+            className="w-full bg-gray-300 text-gray-800 py-3 rounded-lg font-medium hover:bg-gray-400 transition-all mt-4"
+          >
+            {isWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+          </button>
 
           {/* Review Form */}
           {user && (
@@ -251,6 +289,7 @@ const ProductDetails = () => {
         </div>
       </div>
 
+      {/* Fullscreen Modal */}
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
